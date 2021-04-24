@@ -246,47 +246,6 @@ extension Publisher {
 
 extension Publishers {
 
-    public struct PrefixUntilOutput<Upstream, Other> : Publisher where Upstream : Publisher, Other : Publisher {
-
-        /// The kind of values published by this publisher.
-        public typealias Output = Upstream.Output
-
-        /// The kind of errors this publisher might publish.
-        ///
-        /// Use `Never` if this `Publisher` does not publish errors.
-        public typealias Failure = Upstream.Failure
-
-        /// The publisher from which this publisher receives elements.
-        public let upstream: Upstream
-
-        /// Another publisher, whose first output causes this publisher to finish.
-        public let other: Other
-
-        public init(upstream: Upstream, other: Other)
-
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
-    }
-}
-
-extension Publisher {
-
-    /// Republishes elements until another publisher emits an element.
-    ///
-    /// After the second publisher publishes an element, the publisher returned by this method finishes.
-    ///
-    /// - Parameter publisher: A second publisher.
-    /// - Returns: A publisher that republishes elements until the second publisher publishes an element.
-    public func prefix<P>(untilOutputFrom publisher: P) -> Publishers.PrefixUntilOutput<Self, P> where P : Publisher
-}
-
-extension Publishers {
-
     /// A publisher created by applying the merge function to two upstream publishers.
     public struct Merge<A, B> : Publisher where A : Publisher, B : Publisher, A.Failure == B.Failure, A.Output == B.Output {
 
@@ -673,89 +632,6 @@ extension Publisher {
     /// - Returns: A publisher that emits an event when either upstream publisher emits
     /// an event.
     public func merge(with other: Self) -> Publishers.MergeMany<Self>
-}
-
-extension Publishers {
-
-    /// A publisher that publishes either the most-recent or first element published by the upstream publisher in a specified time interval.
-    public struct Throttle<Upstream, Context> : Publisher where Upstream : Publisher, Context : Scheduler {
-
-        /// The kind of values published by this publisher.
-        public typealias Output = Upstream.Output
-
-        /// The kind of errors this publisher might publish.
-        ///
-        /// Use `Never` if this `Publisher` does not publish errors.
-        public typealias Failure = Upstream.Failure
-
-        /// The publisher from which this publisher receives elements.
-        public let upstream: Upstream
-
-        /// The interval in which to find and emit the most recent element.
-        public let interval: Context.SchedulerTimeType.Stride
-
-        /// The scheduler on which to publish elements.
-        public let scheduler: Context
-
-        /// A Boolean value indicating whether to publish the most recent element.
-        ///
-        /// If `false`, the publisher emits the first element received during the interval.
-        public let latest: Bool
-
-        public init(upstream: Upstream, interval: Context.SchedulerTimeType.Stride, scheduler: Context, latest: Bool)
-
-        /// This function is called to attach the specified `Subscriber` to this `Publisher` by `subscribe(_:)`
-        ///
-        /// - SeeAlso: `subscribe(_:)`
-        /// - Parameters:
-        ///     - subscriber: The subscriber to attach to this `Publisher`.
-        ///                   once attached it can begin to receive values.
-        public func receive<S>(subscriber: S) where S : Subscriber, Upstream.Failure == S.Failure, Upstream.Output == S.Input
-    }
-}
-
-extension Publisher {
-
-    /// Publishes either the most-recent or first element published by the upstream
-    /// publisher in the specified time interval.
-    ///
-    /// Use `throttle(for:scheduler:latest:`` to selectively republish elements from
-    /// an upstream publisher during an interval you specify. Other elements received from
-    /// the upstream in the throttling interval aren’t republished.
-    ///
-    /// In the example below, a `Timer.TimerPublisher` produces elements on 3-second
-    /// intervals; the `throttle(for:scheduler:latest:)` operator delivers the first
-    /// event, then republishes only the latest event in the following ten second
-    /// intervals:
-    ///
-    ///     cancellable = Timer.publish(every: 3.0, on: .main, in: .default)
-    ///         .autoconnect()
-    ///         .print("\(Date().description)")
-    ///         .throttle(for: 10.0, scheduler: RunLoop.main, latest: true)
-    ///         .sink(
-    ///             receiveCompletion: { print ("Completion: \($0).") },
-    ///             receiveValue: { print("Received Timestamp \($0).") }
-    ///          )
-    ///
-    ///     // Prints:
-    ///     //    Publish at: 2020-03-19 18:26:54 +0000: receive value: (2020-03-19 18:26:57 +0000)
-    ///     //    Received Timestamp 2020-03-19 18:26:57 +0000.
-    ///     //    Publish at: 2020-03-19 18:26:54 +0000: receive value: (2020-03-19 18:27:00 +0000)
-    ///     //    Publish at: 2020-03-19 18:26:54 +0000: receive value: (2020-03-19 18:27:03 +0000)
-    ///     //    Publish at: 2020-03-19 18:26:54 +0000: receive value: (2020-03-19 18:27:06 +0000)
-    ///     //    Publish at: 2020-03-19 18:26:54 +0000: receive value: (2020-03-19 18:27:09 +0000)
-    ///     //    Received Timestamp 2020-03-19 18:27:09 +0000.
-    ///
-    /// - Parameters:
-    ///   - interval: The interval at which to find and emit either the most recent or
-    ///     the first element, expressed in the time system of the scheduler.
-    ///   - scheduler: The scheduler on which to publish elements.
-    ///   - latest: A Boolean value that indicates whether to publish the most recent
-    ///     element. If `false`, the publisher emits the first element received during
-    ///     the interval.
-    /// - Returns: A publisher that emits either the most-recent or first element received
-    ///   during the specified interval.
-    public func throttle<S>(for interval: S.SchedulerTimeType.Stride, scheduler: S, latest: Bool) -> Publishers.Throttle<Self, S> where S : Scheduler
 }
 
 extension Publishers {
